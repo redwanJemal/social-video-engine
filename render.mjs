@@ -10,7 +10,7 @@
  */
 
 import {bundle} from '@remotion/bundler';
-import {renderMedia, selectComposition, ensureBrowser} from '@remotion/renderer';
+import {renderMedia, selectComposition} from '@remotion/renderer';
 import {readFileSync, existsSync} from 'fs';
 import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
@@ -62,14 +62,8 @@ async function main() {
   if (!browserPath) {
     console.log('\n🌐 No Chrome found — downloading via Remotion...');
     try {
-      await ensureBrowser();
-      console.log('   ✅ Browser downloaded');
-    } catch (e) {
-      console.log('   Remotion ensureBrowser failed, trying npx...');
-      try {
-        execSync('npx remotion browser ensure', {stdio: 'inherit', cwd: __dirname});
-      } catch {}
-    }
+      execSync('npx remotion browser ensure', {stdio: 'inherit', cwd: __dirname});
+    } catch {}
   } else {
     console.log(`   Browser: ${browserPath}`);
   }
