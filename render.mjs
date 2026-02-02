@@ -10,10 +10,11 @@
  */
 
 import {bundle} from '@remotion/bundler';
-import {renderMedia, selectComposition} from '@remotion/renderer';
+import {renderMedia, selectComposition, ensureBrowser} from '@remotion/renderer';
 import {readFileSync, existsSync} from 'fs';
 import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
+import {execSync} from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,11 +31,48 @@ const outputPath = getArg('output') || resolve(__dirname, 'out', 'video.mp4');
 const compositionId = getArg('composition') || 'SocialVideo';
 const codec = getArg('codec') || 'h264';
 
+// Find a working Chrome/Chromium binary
+function findBrowser() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  ].filter(Boolean);
+  
+  for (const bin of candidates) {
+    try {
+      execSync(`${bin} --version 2>/dev/null`, {stdio: 'pipe'});
+      return bin;
+    } catch {}
+  }
+  return null;
+}
+
 async function main() {
   console.log('🎬 Social Video Engine');
   console.log(`   Theme: ${themeName}`);
   console.log(`   Output: ${outputPath}`);
   console.log(`   Composition: ${compositionId}`);
+  
+  // Ensure we have a browser
+  let browserPath = findBrowser();
+  if (!browserPath) {
+    console.log('\n🌐 No Chrome found — downloading via Remotion...');
+    try {
+      await ensureBrowser();
+      console.log('   ✅ Browser downloaded');
+    } catch (e) {
+      console.log('   Remotion ensureBrowser failed, trying npx...');
+      try {
+        execSync('npx remotion browser ensure', {stdio: 'inherit', cwd: __dirname});
+      } catch {}
+    }
+  } else {
+    console.log(`   Browser: ${browserPath}`);
+  }
   
   // Load custom config if provided
   let inputProps = undefined;
@@ -67,21 +105,29 @@ async function main() {
   console.log(`\n🎥 Rendering ${composition.durationInFrames} frames (${(composition.durationInFrames / composition.fps).toFixed(1)}s)...`);
 
   // Render
-  await renderMedia({
+  const renderOpts = {
     composition,
     serveUrl: bundled,
     codec,
     outputLocation: outputPath,
     inputProps: inputProps || {},
     chromiumOptions: {
-      args: ['--no-sandbox', '--disable-gpu', '--single-process'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
     },
     onProgress: ({progress}) => {
       if (Math.round(progress * 100) % 10 === 0) {
         process.stdout.write(`\r   Progress: ${Math.round(progress * 100)}%`);
       }
     },
-  });
+  };
+
+  // Use custom browser path if found (not snap)
+  browserPath = findBrowser();
+  if (browserPath) {
+    renderOpts.browserExecutable = browserPath;
+  }
+
+  await renderMedia(renderOpts);
 
   console.log(`\n\n✅ Video rendered: ${outputPath}`);
 }
