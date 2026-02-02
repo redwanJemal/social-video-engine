@@ -31,41 +31,18 @@ const outputPath = getArg('output') || resolve(__dirname, 'out', 'video.mp4');
 const compositionId = getArg('composition') || 'SocialVideo';
 const codec = getArg('codec') || 'h264';
 
-// Find a working Chrome/Chromium binary
-function findBrowser() {
-  const candidates = [
-    process.env.CHROME_PATH,
-    process.env.PUPPETEER_EXECUTABLE_PATH,
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/google-chrome',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-  ].filter(Boolean);
-  
-  for (const bin of candidates) {
-    try {
-      execSync(`${bin} --version 2>/dev/null`, {stdio: 'pipe'});
-      return bin;
-    } catch {}
-  }
-  return null;
-}
-
 async function main() {
   console.log('🎬 Social Video Engine');
   console.log(`   Theme: ${themeName}`);
   console.log(`   Output: ${outputPath}`);
   console.log(`   Composition: ${compositionId}`);
   
-  // Ensure we have a browser
-  let browserPath = findBrowser();
-  if (!browserPath) {
-    console.log('\n🌐 No Chrome found — downloading via Remotion...');
-    try {
-      execSync('npx remotion browser ensure', {stdio: 'inherit', cwd: __dirname});
-    } catch {}
-  } else {
-    console.log(`   Browser: ${browserPath}`);
+  // Ensure Remotion's Chrome Headless Shell is installed
+  console.log('\n🌐 Ensuring browser...');
+  try {
+    execSync('npx remotion browser ensure', {stdio: 'inherit', cwd: __dirname});
+  } catch {
+    console.log('   (browser ensure had an issue, will try rendering anyway)');
   }
   
   // Load custom config if provided
@@ -98,9 +75,7 @@ async function main() {
 
   console.log(`\n🎥 Rendering ${composition.durationInFrames} frames (${(composition.durationInFrames / composition.fps).toFixed(1)}s)...`);
 
-  // Render
-  browserPath = findBrowser();
-  
+  // Render — use Remotion's own Chrome Headless Shell (not system Chrome)
   const renderOpts = {
     composition,
     serveUrl: bundled,
@@ -108,25 +83,14 @@ async function main() {
     outputLocation: outputPath,
     inputProps: inputProps || {},
     chromiumOptions: {
-      disableWebSecurity: true,
-      gl: 'swangle',
+      enableMultiProcessOnLinux: true,
     },
     onProgress: ({progress}) => {
       if (Math.round(progress * 100) % 10 === 0) {
         process.stdout.write(`\r   Progress: ${Math.round(progress * 100)}%`);
       }
     },
-    concurrency: 1,
-    timeoutInMilliseconds: 120000,
   };
-
-  if (browserPath) {
-    renderOpts.browserExecutable = browserPath;
-  }
-
-  // Set Chrome flags via env (Remotion picks these up)
-  process.env.PUPPETEER_CHROMIUM_REVISION = '1';
-  process.env.CHROMIUM_FLAGS = '--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu';
 
   await renderMedia(renderOpts);
 
