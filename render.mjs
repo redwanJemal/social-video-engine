@@ -99,6 +99,8 @@ async function main() {
   console.log(`\n🎥 Rendering ${composition.durationInFrames} frames (${(composition.durationInFrames / composition.fps).toFixed(1)}s)...`);
 
   // Render
+  browserPath = findBrowser();
+  
   const renderOpts = {
     composition,
     serveUrl: bundled,
@@ -106,20 +108,25 @@ async function main() {
     outputLocation: outputPath,
     inputProps: inputProps || {},
     chromiumOptions: {
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
+      disableWebSecurity: true,
+      gl: 'swangle',
     },
     onProgress: ({progress}) => {
       if (Math.round(progress * 100) % 10 === 0) {
         process.stdout.write(`\r   Progress: ${Math.round(progress * 100)}%`);
       }
     },
+    concurrency: 1,
+    timeoutInMilliseconds: 120000,
   };
 
-  // Use custom browser path if found (not snap)
-  browserPath = findBrowser();
   if (browserPath) {
     renderOpts.browserExecutable = browserPath;
   }
+
+  // Set Chrome flags via env (Remotion picks these up)
+  process.env.PUPPETEER_CHROMIUM_REVISION = '1';
+  process.env.CHROMIUM_FLAGS = '--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage --disable-gpu';
 
   await renderMedia(renderOpts);
 
