@@ -1,0 +1,66 @@
+{
+  "scenes": [
+    {
+      "type": "intro",
+      "duration": 90,
+      "props": {
+        "hook": "Stop scrolling.",
+        "subtitle": "This changes everything"
+      }
+    },
+    {
+      "type": "kinetic-text",
+      "duration": 120,
+      "props": {
+        "lines": ["AI automation", "saves businesses", "20+ hours per week"],
+        "accentLineIndex": 2,
+        "animation": "slide-up"
+      }
+    },
+    {
+      "type": "stat-card",
+      "duration": 120,
+      "props": {
+        "title": "The Numbers",
+        "stats": [
+          {"value": "85%", "label": "of tasks automated"},
+          {"value": "10x", "label": "faster than manual"}
+        ]
+      }
+    },
+    {
+      "type": "list-reveal",
+      "duration": 120,
+      "props": {
+        "title": "What you can automate:",
+        "items": ["Customer support", "Social media posting", "Lead qualification", "Invoice processing"],
+        "icon": "⚡"
+      }
+    },
+    {
+      "type": "quote-card",
+      "duration": 100,
+      "props": {
+        "quote": "The best time to automate was yesterday. The second best time is now.",
+        "author": "Every smart founder",
+        "role": "in 2026"
+      }
+    },
+    {
+      "type": "cta",
+      "duration": 90,
+      "props": {
+        "headline": "Ready to automate?",
+        "subtext": "Start saving hours every week",
+        "buttonText": "Follow for more"
+      }
+    }
+  ],
+  "theme": {
+    "name": "Midnight",
+    "bgGradient": ["#0f0c29", "#302b63"],
+    "textColor": "#ffffff",
+    "accentColor": "#f5576c",
+    "fontFamily": "sans-serif"
+  }
+}
